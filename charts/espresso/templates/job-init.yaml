@@ -1,0 +1,84 @@
+{{- if .Values.init.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: espresso-init
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        {{- include "espresso.selectorLabels" . | nindent 8 }}
+        espresso: init
+    spec:
+      restartPolicy: Never
+
+
+      {{- include "espresso.imagePullSecrets" . | nindent 6 }}
+      containers:
+
+{{- if .Values.init.postgresSchema }}
+        - name: init-postgres-schema
+          image: {{ include "espresso.espressodoImage" (dict "root" . "name" "espresso-init-pg") }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: {{ include "espresso.fullname" . }}-config
+          env:
+            - name: ESPRESSO_TENANT
+              value: {{ .Values.espresso.tenant | quote }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
+                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}              
+{{- end }}
+
+{{- if .Values.init.temporalNamespace }}
+        - name: init-temporal-namespace
+          # temporal admin tools image contains temporal CLI (and sometimes tctl)
+          image: {{ .Values.init.temporalAdminToolsImage | quote }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: {{ include "espresso.fullname" . }}-config
+          command: ["/bin/sh","-lc"]
+          args:
+            - |
+              set -euo pipefail
+
+              NS="{{ .Values.espresso.tenant }}"
+              HOST="${TEMPORAL_HOST}:${TEMPORAL_PORT}"
+
+              echo "Ensuring Temporal namespace: ${NS} on ${HOST}"
+
+              # New temporal CLI: uses TEMPORAL_ADDRESS instead of --address
+              export TEMPORAL_ADDRESS="${HOST}"
+
+              if command -v temporal >/dev/null 2>&1; then
+                # Idempotent: describe first, create if missing
+                temporal operator namespace describe --namespace "${NS}" >/dev/null 2>&1 \
+                  || temporal operator namespace create \
+                      --namespace "${NS}" \
+                      --description "Mandant ${NS} - Espresso Data Privacy Namespace" \
+                      --retention 7d
+              elif command -v tctl >/dev/null 2>&1; then
+                # Fallback for older images (syntax can vary by version)
+                tctl --address "${HOST}" namespace describe --namespace "${NS}" >/dev/null 2>&1 \
+                  || tctl --address "${HOST}" namespace register --namespace "${NS}"
+              else
+                echo "ERROR: Neither 'temporal' nor 'tctl' found in the admin-tools image."
+                exit 1
+              fi
+
+              echo "Temporal namespace OK."
+{{- end }}
+
+{{- if and (not .Values.init.postgresSchema) (not .Values.init.temporalNamespace) }}
+        - name: noop
+          image: busybox:1.36
+          command: ["sh","-c","echo 'init enabled but no actions selected';"]
+{{- end }}
+{{- end }}

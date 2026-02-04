@@ -1,0 +1,331 @@
+# ============================================================================
+# Espresso Data Privacy — Helm Chart Default Values (Vendor Neutral)
+# ============================================================================
+# This file defines the DEFAULT values shipped with the Espresso Helm chart.
+#
+# IMPORTANT PRINCIPLES
+# 1) Vendor-neutral defaults:
+#    - No customer-specific hostnames, URLs, client IDs, tenant codes, or
+#      environment-specific identifiers are stored here.
+#    - Customer-specific configuration must be provided via separate
+#      customer values files (e.g. values_rest.yaml / values_azsb.yaml).
+#
+# 2) Secrets are never stored in values.yaml:
+#    - Sensitive values (passwords, tokens, salts, signing keys) must be
+#      provided via existing Kubernetes Secrets referenced by:
+#        existingSecret + ...SecretKey
+#
+# 3) External dependencies:
+#    - PostgreSQL is external (provided by customer or another chart).
+#    - Temporal is external (provided by customer or another chart).
+#
+# 4) Access model:
+#    - Default: port-forwarding (dev/minikube-friendly).
+#    - Optional: Ingress (disabled by default).
+# ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# Container images
+# ----------------------------------------------------------------------------
+# Images are built as:
+#   <images.espressoRepo>/<imageName>:<images.tag>
+#
+# Example:
+#   espressoRepo: "myacr.azurecr.io/espresso"
+#   tag: "1.5.1"
+# will pull:
+#   myacr.azurecr.io/espresso/<imageName>:1.5.1
+images:
+# Controls when the kubelet attempts to pull the specified image.
+  # Using 'IfNotPresent' is ideal for local development (e.g. Minikube) 
+  # to use locally loaded images and avoid unnecessary registry requests.
+  pullPolicy: IfNotPresent
+  
+  # Docker repository / registry prefix hosting Espresso images.
+  # Customers can override this to point to their own registry.
+  espressoRepo: "espressodo"
+
+  # Image tag used for all Espresso components.
+  # Customers may pin this for reproducible deployments.
+  tag: "1.5.1"
+
+  # Optional list of Kubernetes imagePullSecret names for private registries.
+  # Example:
+  #   imagePullSecrets:
+  #     - "my-registry-cred"
+  imagePullSecrets: []
+
+
+# ----------------------------------------------------------------------------
+# Espresso application configuration
+# ----------------------------------------------------------------------------
+espresso:
+
+  # --------------------------------------------------------------------------
+  # Tenant identifier
+  # --------------------------------------------------------------------------
+  # Tenant code used by Espresso for multi-tenant separation.
+  # Expected format: EXACTLY 3 uppercase letters (e.g. "PAX").
+  #
+  # Vendor default is empty to avoid shipping customer-specific values.
+  # Customers MUST set this in their customer values file.
+  tenant: ""
+
+  # --------------------------------------------------------------------------
+  # Interface mode (runtime integration style)
+  # --------------------------------------------------------------------------
+  # Supported modes:
+  # - "REST": HTTP-based integration (REST endpoints)
+  # - "AZSB": Azure Service Bus integration
+  #
+  # Vendor default is "REST" because it requires fewer external parameters.
+  interface: "REST"
+
+
+  # --------------------------------------------------------------------------
+  # UI Frontend configuration
+  # --------------------------------------------------------------------------
+  uiFrontend:
+    # Base path used by the UI frontend to reach the UI backend.
+    # Default "/api/v1" matches the chart's routing conventions.
+    #
+    # NOTE:
+    # - When ingress is enabled, customers typically route /api/v1/* to the
+    #   backend/gateway service.
+    uiBackend: "/api/v1"
+
+
+  # --------------------------------------------------------------------------
+  # UI Backend configuration
+  # --------------------------------------------------------------------------
+  uiBackend:
+    # ------------------------------------------------------------------------
+    # Sensitive values via existing Kubernetes Secret
+    # ------------------------------------------------------------------------
+    # Sensitive values MUST NOT be stored in values.yaml.
+    # Provide them via an existing Kubernetes Secret in the same namespace.
+    #
+    # existingSecret:
+    #   Name of the Kubernetes Secret that contains UI backend sensitive keys.
+    existingSecret: ""
+
+    # passwordSaltSecretKey:
+    #   Key name inside *existingSecret* that contains the password salt string.
+    #
+    # IMPORTANT:
+    # - This value MUST remain stable across upgrades.
+    # - Changing the salt can invalidate default/precomputed users/passwords
+    #   stored in the database (depending on your implementation).
+    passwordSaltSecretKey: "ESPRESSO_UI_API_PASSWORD_SALT"
+
+    # privateKeySecretKey:
+    #   Key name inside *existingSecret* that contains the OIDC/JWT signing key.
+    #
+    # IMPORTANT:
+    # - This value MUST remain stable across upgrades unless you have a planned
+    #   key-rotation strategy (multiple keys / kid / overlap window).
+    # - Changing this key can invalidate already issued tokens.
+    privateKeySecretKey: "ESPRESSO_UI_API_PRIVATE_KEY"
+
+    # ------------------------------------------------------------------------
+    # Authentication / runtime behavior
+    # ------------------------------------------------------------------------
+    # loginMode:
+    #   Authentication mode for the UI backend.
+    #   Allowed values:
+    #     - "manual": local/manual login
+    #     - "sso": OIDC-based login (requires espresso.sso.enabled=true)
+    loginMode: "manual"
+
+    # postTaskUrl:
+    #   REST endpoint URL used by the UI backend to submit tasks.
+    #   Vendor default targets the in-cluster espresso-api service.
+    postTaskUrl: "http://espresso-api:8097"
+
+
+  # --------------------------------------------------------------------------
+  # SCIM configuration (optional)
+  # --------------------------------------------------------------------------
+  scim:
+    # Enable/disable SCIM server integration.
+    enabled: false
+
+    # existingSecret:
+    #   Name of the Kubernetes Secret containing the SCIM API token.
+    existingSecret: ""
+
+    # apiTokenSecretKey:
+    #   Key name inside *existingSecret* that contains the SCIM API token string.
+    apiTokenSecretKey: "ESPRESSO_API_TOKEN"
+
+
+  # --------------------------------------------------------------------------
+  # SSO / OIDC configuration (optional)
+  # --------------------------------------------------------------------------
+  sso:
+    # Enable/disable SSO (OIDC) integration.
+    enabled: false
+
+    # authorityUrl:
+    #   OIDC authority/issuer base URL (IdP endpoint).
+    #   Example (customer-specific): "https://login.example.com/realms/<realm>"
+    authorityUrl: ""
+
+    # clientId:
+    #   OIDC client ID (NOT a secret).
+    clientId: ""
+
+    # Client secret handling:
+    # Only the OIDC client secret is sensitive. All other SSO fields are
+    # non-secret configuration and are rendered via ConfigMap.
+    #
+    # existingSecret:
+    #   Name of the Kubernetes Secret that contains the OIDC client secret.
+    existingSecret: ""
+
+    # clientSecretSecretKey:
+    #   Key name inside *existingSecret* that contains the OIDC client secret.
+    clientSecretSecretKey: "AUTHORITY_CLIENT_SECRET"
+
+    # redirectUri:
+    #   Redirect URI registered at the IdP for login callbacks.
+    redirectUri: ""
+
+    # postLogoutRedirectUri:
+    #   Redirect URI registered at the IdP for logout callbacks.
+    postLogoutRedirectUri: ""
+
+    # scope:
+    #   OIDC scopes to request.
+    scope: "openid profile email"
+
+
+# ----------------------------------------------------------------------------
+# Database configuration (external PostgreSQL)
+# ----------------------------------------------------------------------------
+db:
+  # Database type supported by this chart.
+  type: "postgres"
+
+  postgres:
+    # host:
+    #   PostgreSQL hostname or Kubernetes Service DNS name.
+    #   Customer must provide a value.
+    host: ""
+
+    # port:
+    #   PostgreSQL port.
+    port: 5432
+
+    # database:
+    #   Database name to connect to.
+    database: ""
+
+    # user:
+    #   Database user name.
+    user: ""
+
+    # existingSecret:
+    #   Name of the Kubernetes Secret that contains the database password.
+    existingSecret: ""
+
+    # passwordSecretKey:
+    #   Key name inside *existingSecret* that contains the database password.
+    passwordSecretKey: "POSTGRES_PASSWORD"
+
+    # sslMode:
+    #   PostgreSQL SSL mode (e.g., "require", "disable").
+    sslMode: "require"
+
+
+# ----------------------------------------------------------------------------
+# Temporal configuration (external)
+# ----------------------------------------------------------------------------
+temporal:
+  # host:
+  #   Temporal Frontend hostname or Kubernetes Service DNS name.
+  host: "temporal-frontend"
+
+  # port:
+  #   Temporal Frontend port.
+  port: 7233
+
+
+# ----------------------------------------------------------------------------
+# Initialization jobs (Helm hook)
+# ----------------------------------------------------------------------------
+init:
+  # When enabled, the chart runs an init job as a Helm hook (pre-install, pre-upgrade)
+  # to bootstrap required resources such as DB schema and/or Temporal namespace.
+  enabled: true
+
+  # postgresSchema:
+  #   If true, creates/updates the PostgreSQL schema needed by Espresso.
+  postgresSchema: true
+
+  # temporalNamespace:
+  #   If true, creates the Temporal namespace used by Espresso.
+  temporalNamespace: true
+
+  # temporalAdminToolsImage:
+  #   Container image used for Temporal administration (tctl).
+  temporalAdminToolsImage: temporalio/admin-tools:1.29.1-tctl-1.18.4-cli-1.5.0
+
+
+# ----------------------------------------------------------------------------
+# Azure Service Bus configuration (only if espresso.interface="AZSB")
+# ----------------------------------------------------------------------------
+azsb:
+  # host:
+  #   Azure Service Bus namespace host, e.g. "your.servicebus.windows.net"
+  host: ""
+
+  # user:
+  #   Username / SAS key name, e.g. "RootManageSharedAccessKey"
+  user: ""
+
+  # existingSecret:
+  #   Name of the Kubernetes Secret that contains the Service Bus password/key.
+  existingSecret: ""
+
+  # passwordSecretKey:
+  #   Key name inside *existingSecret* that contains the Service Bus password/key.
+  passwordSecretKey: "BROKER_PASSWORD"
+
+  # topic configuration
+  topic:
+    # order:
+    #   Topic name used for orders.
+    order: ""
+
+  # queue configuration
+  queue:
+    # delivery:
+    #   Queue name used for deliveries.
+    delivery: ""
+    # receipt:
+    #   Queue name used for receipts.
+    receipt: ""
+
+
+# ----------------------------------------------------------------------------
+# Ingress (optional)
+# ----------------------------------------------------------------------------
+ingress:
+  # Enable/disable ingress resources.
+  enabled: false
+
+  # className:
+  #   IngressClass to use (commonly "nginx").
+  className: "nginx"
+
+  # host:
+  #   Hostname used in the ingress rule (when ingress is enabled).
+  #
+  # Vendor default is empty to avoid shipping customer-specific values.
+  host: ""
+
+  # annotations:
+  #   Additional annotations for your ingress controller.
+  annotations: {}

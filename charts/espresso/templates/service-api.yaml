@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: espresso-api
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "espresso.selectorLabels" . | nindent 4 }}
+    espresso: api
+  ports:
+    - name: batch
+      port: 8095
+      targetPort: 8095
+    - name: task-get
+      port: 8096
+      targetPort: 8096
+    - name: task-post
+      port: 8097
+      targetPort: 8097

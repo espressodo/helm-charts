@@ -1,0 +1,17 @@
+{{- if and .Values.ingress.enabled (eq .Values.espresso.interface "REST") }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: espresso-rest-gateway
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "espresso.selectorLabels" . | nindent 4 }}
+    espresso: rest-gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+{{- end }}

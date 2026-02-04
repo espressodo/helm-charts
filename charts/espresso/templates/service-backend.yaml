@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: espresso-backend
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "espresso.selectorLabels" . | nindent 4 }}
+    espresso: backend
+  ports:
+    - name: api
+      port: 8088
+      targetPort: 8088

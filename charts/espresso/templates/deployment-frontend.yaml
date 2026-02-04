@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: espresso-frontend
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "espresso.selectorLabels" . | nindent 6 }}
+      espresso: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "espresso.selectorLabels" . | nindent 8 }}
+        espresso: frontend
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "espresso.fullname" . }}
+      {{- include "espresso.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: webapp
+          image: {{ include "espresso.espressodoImage" (dict "root" . "name" "espresso-ui-webapp") }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            - name: UI_BACKEND
+              value: {{ .Values.espresso.uiFrontend.uiBackend | default "/api/v1" | quote }}

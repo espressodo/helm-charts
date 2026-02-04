@@ -1,0 +1,68 @@
+{{- if and .Values.ingress.enabled (eq .Values.espresso.interface "REST") }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: espresso-rest-gateway
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+data:
+  nginx.conf: |
+    worker_processes  1;
+
+    events { worker_connections  1024; }
+
+    http {
+      # DNS resolver for Kubernetes service names
+      resolver kube-dns.kube-system.svc.cluster.local valid=10s ipv6=off;
+
+      # Upstreams (service + port)
+      upstream api_batch {
+        server espresso-api:8095;
+      }
+      upstream api_task_get {
+        server espresso-api:8096;
+      }
+      upstream api_task_post {
+        server espresso-api:8097;
+      }
+
+      server {
+        listen 8080;
+
+        # ---- BATCH: POST /rest/v1/batch or /rest/v2/batch ----
+        location ~ ^/rest/v(1|2)/batch(/.*)?$ {
+          proxy_set_header Host $host;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+
+          proxy_pass http://api_batch$request_uri;
+        }
+
+        # ---- TASK: GET/POST /rest/v1/task or /rest/v2/task ----
+        location ~ ^/rest/v(1|2)/task(/.*)?$ {
+          proxy_set_header Host $host;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+
+          # Route by HTTP method
+          if ($request_method = GET) {
+            proxy_pass http://api_task_get$request_uri;
+            break;
+          }
+
+          if ($request_method = POST) {
+            proxy_pass http://api_task_post$request_uri;
+            break;
+          }
+
+          # Optional: reject other methods explicitly
+          return 405;
+        }
+
+        # Anything else under /rest/v1 or /rest/v2 -> 404
+        location ~ ^/rest/v(1|2)/ {
+          return 404;
+        }
+      }
+    }
+{{- end }}

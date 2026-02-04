@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: espresso-engine
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "espresso.selectorLabels" . | nindent 6 }}
+      espresso: engine
+  template:
+    metadata:
+      labels:
+        {{- include "espresso.selectorLabels" . | nindent 8 }}
+        espresso: engine
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "espresso.fullname" . }}
+      {{- include "espresso.imagePullSecrets" . | nindent 6 }}
+      containers:
+
+        - name: worker-batch-post
+          image: {{ include "espresso.espressodoImage" (dict "root" . "name" "worker-batch-post") }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: {{ include "espresso.fullname" . }}-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
+                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
+            {{- if eq .Values.espresso.interface "AZSB" }}
+            - name: BROKER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "azsb.existingSecret is required when espresso.interface=AZSB" .Values.azsb.existingSecret | quote }}
+                  key: {{ required "azsb.passwordSecretKey is required when espresso.interface=AZSB" .Values.azsb.passwordSecretKey | quote }}
+            {{- end }}
+
+        - name: worker-task-get
+          image: {{ include "espresso.espressodoImage" (dict "root" . "name" "worker-task-get") }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: {{ include "espresso.fullname" . }}-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
+                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
+            {{- if eq .Values.espresso.interface "AZSB" }}
+            - name: BROKER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "azsb.existingSecret is required when espresso.interface=AZSB" .Values.azsb.existingSecret | quote }}
+                  key: {{ required "azsb.passwordSecretKey is required when espresso.interface=AZSB" .Values.azsb.passwordSecretKey | quote }}
+            {{- end }}
+
+        - name: worker-task-post
+          image: {{ include "espresso.espressodoImage" (dict "root" . "name" "worker-task-post") }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: {{ include "espresso.fullname" . }}-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
+                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
+            {{- if eq .Values.espresso.interface "AZSB" }}
+            - name: BROKER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "azsb.existingSecret is required when espresso.interface=AZSB" .Values.azsb.existingSecret | quote }}
+                  key: {{ required "azsb.passwordSecretKey is required when espresso.interface=AZSB" .Values.azsb.passwordSecretKey | quote }}
+            {{- end }}

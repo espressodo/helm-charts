@@ -1,0 +1,465 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "images": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "espressoRepo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "default": []
+        }
+      }
+    },
+    "espresso": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "tenant",
+        "interface",
+        "uiBackend",
+        "scim",
+        "sso"
+      ],
+      "properties": {
+        "tenant": {
+          "type": "string",
+          "title": "Tenant code",
+          "description": "Exactly 3 uppercase letters, e.g. PAX",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "interface": {
+          "type": "string",
+          "title": "Espresso interface mode",
+          "enum": [
+            "REST",
+            "AZSB"
+          ]
+        },
+        "uiFrontend": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "uiBackend": {
+              "type": "string",
+              "minLength": 1,
+              "default": "/api/v1"
+            }
+          }
+        },
+        "uiBackend": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "existingSecret",
+            "passwordSaltSecretKey",
+            "privateKeySecretKey",
+            "loginMode",
+            "postTaskUrl"
+          ],
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "minLength": 1
+            },
+            "passwordSaltSecretKey": {
+              "type": "string",
+              "minLength": 1
+            },
+            "privateKeySecretKey": {
+              "type": "string",
+              "minLength": 1
+            },
+            "loginMode": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "sso"
+              ]
+            },
+            "postTaskUrl": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "scim": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "enabled"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "existingSecret": {
+              "type": "string"
+            },
+            "apiTokenSecretKey": {
+              "type": "string"
+            }
+          }
+        },
+        "sso": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "enabled",
+            "scope"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "authorityUrl": {
+              "type": "string"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "existingSecret": {
+              "type": "string"
+            },
+            "clientSecretSecretKey": {
+              "type": "string"
+            },
+            "redirectUri": {
+              "type": "string"
+            },
+            "postLogoutRedirectUri": {
+              "type": "string"
+            },
+            "scope": {
+              "type": "string",
+              "default": "openid profile email"
+            }
+          }
+        }
+      }
+    },
+    "db": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "type",
+        "postgres"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "postgres"
+          ],
+          "default": "postgres"
+        },
+        "postgres": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "host",
+            "port",
+            "database",
+            "user",
+            "sslMode",
+            "existingSecret",
+            "passwordSecretKey"
+          ],
+          "properties": {
+            "host": {
+              "type": "string",
+              "minLength": 1
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "default": 5432
+            },
+            "database": {
+              "type": "string",
+              "minLength": 1
+            },
+            "user": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sslMode": {
+              "type": "string",
+              "default": "require"
+            },
+            "existingSecret": {
+              "type": "string",
+              "minLength": 1
+            },
+            "passwordSecretKey": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "temporal": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "host",
+        "port"
+      ],
+      "properties": {
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "port": {
+          "type": "integer",
+          "default": 7233
+        }
+      }
+    },
+    "azsb": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "user": {
+          "type": "string"
+        },
+        "existingSecret": {
+          "type": "string"
+        },
+        "passwordSecretKey": {
+          "type": "string"
+        },
+        "topic": {
+          "type": "object",
+          "properties": {
+            "order": {
+              "type": "string"
+            }
+          }
+        },
+        "queue": {
+          "type": "object",
+          "properties": {
+            "delivery": {
+              "type": "string"
+            },
+            "receipt": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "init": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "postgresSchema",
+        "temporalNamespace"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "postgresSchema": {
+          "type": "boolean",
+          "default": true
+        },
+        "temporalNamespace": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "className",
+        "host",
+        "annotations"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "className": {
+          "type": "string",
+          "default": "nginx"
+        },
+        "host": {
+          "type": "string"
+        },
+        "annotations": {
+          "type": "object"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "espresso": {
+            "properties": {
+              "scim": {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "espresso": {
+            "properties": {
+              "scim": {
+                "required": [
+                  "existingSecret",
+                  "apiTokenSecretKey"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "espresso": {
+            "properties": {
+              "sso": {
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "espresso": {
+            "properties": {
+              "sso": {
+                "required": [
+                  "authorityUrl",
+                  "clientId",
+                  "existingSecret",
+                  "clientSecretSecretKey",
+                  "redirectUri",
+                  "postLogoutRedirectUri",
+                  "scope"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "espresso": {
+            "properties": {
+              "interface": {
+                "const": "AZSB"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "azsb"
+        ],
+        "properties": {
+          "azsb": {
+            "required": [
+              "host",
+              "user",
+              "existingSecret",
+              "passwordSecretKey",
+              "topic",
+              "queue"
+            ],
+            "properties": {
+              "host": {
+                "minLength": 1
+              },
+              "user": {
+                "minLength": 1
+              },
+              "existingSecret": {
+                "minLength": 1
+              },
+              "passwordSecretKey": {
+                "minLength": 1
+              },
+              "topic": {
+                "properties": {
+                  "order": {
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "order"
+                ]
+              },
+              "queue": {
+                "properties": {
+                  "delivery": {
+                    "minLength": 1
+                  },
+                  "receipt": {
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "delivery",
+                  "receipt"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

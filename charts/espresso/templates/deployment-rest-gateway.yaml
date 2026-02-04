@@ -1,0 +1,39 @@
+{{- if and .Values.ingress.enabled (eq .Values.espresso.interface "REST") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: espresso-rest-gateway
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "espresso.selectorLabels" . | nindent 6 }}
+      espresso: rest-gateway
+  template:
+    metadata:
+      labels:
+        {{- include "espresso.selectorLabels" . | nindent 8 }}
+        espresso: rest-gateway
+      annotations:
+        checksum/rest-gateway-config: {{ include (print $.Template.BasePath "/configmap-rest-gateway.yaml") . | sha256sum }}        
+    spec:
+      serviceAccountName: {{ include "espresso.fullname" . }}
+      {{- include "espresso.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: espresso-rest-gateway
+{{- end }}

@@ -1,0 +1,17 @@
+{{- if .Values.espresso.scim.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: espresso-scim
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "espresso.selectorLabels" . | nindent 4 }}
+    espresso: backend
+  ports:
+    - name: scim
+      port: 8109
+      targetPort: 8109
+{{- end }}

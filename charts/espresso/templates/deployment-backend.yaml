@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: espresso-backend
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "espresso.selectorLabels" . | nindent 6 }}
+      espresso: backend
+  template:
+    metadata:
+      labels:
+        {{- include "espresso.selectorLabels" . | nindent 8 }}
+        espresso: backend
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "espresso.fullname" . }}
+      {{- include "espresso.imagePullSecrets" . | nindent 6 }}
+      containers:
+
+        - name: ui-backend
+          image: {{ include "espresso.espressodoImage" (dict "root" . "name" "espresso-ui-backend") }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: api
+              containerPort: 8088
+          envFrom:
+            - configMapRef:
+                name: {{ include "espresso.fullname" . }}-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
+                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
+            - name: ESPRESSO_UI_API_PASSWORD_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "espresso.uiBackend.existingSecret is required" .Values.espresso.uiBackend.existingSecret | quote }}
+                  key: {{ required "espresso.uiBackend.passwordSaltSecretKey is required" .Values.espresso.uiBackend.passwordSaltSecretKey | quote }}
+            - name: ESPRESSO_UI_API_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "espresso.uiBackend.existingSecret is required" .Values.espresso.uiBackend.existingSecret | quote }}
+                  key: {{ required "espresso.uiBackend.privateKeySecretKey is required" .Values.espresso.uiBackend.privateKeySecretKey | quote }}
+            {{- if .Values.espresso.sso.enabled }}
+            - name: AUTHORITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "espresso.sso.existingSecret is required when espresso.sso.enabled=true" .Values.espresso.sso.existingSecret | quote }}
+                  key: {{ required "espresso.sso.clientSecretSecretKey is required when espresso.sso.enabled=true" .Values.espresso.sso.clientSecretSecretKey | quote }}
+            {{- end }}
+            - name: ESPRESSO_POST_TASK_URL
+              value: {{ .Values.espresso.uiBackend.postTaskUrl | quote }}
+            - name: ESPRESSO_UI_LOGIN_MODE
+              value: {{ .Values.espresso.uiBackend.loginMode | quote }}
+
+{{- if .Values.espresso.scim.enabled }}
+
+        - name: scim
+          image: {{ include "espresso.espressodoImage" (dict "root" . "name" "espresso-scim-server") }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: scim
+              containerPort: 8109
+          envFrom:
+            - configMapRef:
+                name: {{ include "espresso.fullname" . }}-config
+env:
+  - name: POSTGRES_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
+        key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
+  - name: ESPRESSO_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: {{ required "espresso.scim.existingSecret is required when espresso.scim.enabled=true" .Values.espresso.scim.existingSecret | quote }}
+        key: {{ required "espresso.scim.apiTokenSecretKey is required when espresso.scim.enabled=true" .Values.espresso.scim.apiTokenSecretKey | quote }}
+
+{{- end }}

@@ -1,0 +1,68 @@
+Espresso has been installed successfully.
+
+Namespace: {{ .Release.Namespace }}
+
+{{- if .Values.ingress.enabled }}
+===============================================================================
+METHOD 1: INGRESS (Recommended / Production-like)
+===============================================================================
+
+Access the Application:
+  https://{{ .Values.ingress.host }}/
+
+Routing Overview:
+  /         -> espresso-frontend
+  /api/v1   -> espresso-backend
+  /scim/v2  -> espresso-scim (if enabled)
+{{- if and (index .Values "espresso-api") (index .Values "espresso-api" "env") (eq (index .Values "espresso-api" "env" "ESPRESSO_INTERFACE") "REST") }}
+  /rest/v1  -> espresso-rest-gateway
+  /rest/v2  -> espresso-rest-gateway
+{{- end }}
+
+LOCAL INGRESS TESTING (e.g., Minikube/Docker Desktop):
+If your Ingress is not reachable directly via the host, use a Port-Forward:
+
+1) Forward the Ingress Controller:
+   kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 9443:443
+
+2) Access via Browser:
+   https://localhost:9443 (Accept the self-signed certificate if prompted)
+
+3) Verify Backend via Ingress:
+   curl -vk -H "Host: {{ .Values.ingress.host }}" https://localhost:9443/api/v1/oidc-conf
+
+{{- else }}
+===============================================================================
+METHOD 2: PORT-FORWARD (Development / No Ingress)
+===============================================================================
+
+Since Ingress is disabled, a "Dev-Proxy" has been deployed to handle routing 
+and prevent CORS issues.
+
+1) MAIN ACCESS (Frontend + Backend combined)
+   Run this command and open http://localhost:8080
+   kubectl -n {{ .Release.Namespace }} port-forward svc/dev-proxy 8080:80
+
+2) TEMPORAL WEB UI
+   Access the workflow dashboard at http://localhost:8081
+   kubectl -n {{ .Release.Namespace }} port-forward svc/temporal-web 8081:8080
+
+{{- if and (index .Values "espresso-api") (index .Values "espresso-api" "env") (eq (index .Values "espresso-api" "env" "ESPRESSO_INTERFACE") "REST") }}
+3) REST API GATEWAY
+   Access the REST interface locally:
+   kubectl -n {{ .Release.Namespace }} port-forward svc/espresso-api 8085:8095 8086:8096 8087:8097
+{{- end }}
+
+4) DIRECT BACKEND ACCESS (Debug only)
+   kubectl -n {{ .Release.Namespace }} port-forward svc/espresso-backend 8088:8088
+   Test: curl http://localhost:8088/api/v1/oidc-conf
+
+5) SCIM API (if enabled)
+   kubectl -n {{ .Release.Namespace }} port-forward svc/espresso-scim 8089:8109
+{{- end }}
+
+===============================================================================
+STATUS CHECK
+===============================================================================
+To check the status of your pods, run:
+  kubectl get pods -n {{ .Release.Namespace }}
