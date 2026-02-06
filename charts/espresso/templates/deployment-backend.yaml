@@ -70,16 +70,16 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "espresso.fullname" . }}-config
-env:
-  - name: POSTGRES_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
-        key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
-  - name: ESPRESSO_API_TOKEN
-    valueFrom:
-      secretKeyRef:
-        name: {{ required "espresso.scim.existingSecret is required when espresso.scim.enabled=true" .Values.espresso.scim.existingSecret | quote }}
-        key: {{ required "espresso.scim.apiTokenSecretKey is required when espresso.scim.enabled=true" .Values.espresso.scim.apiTokenSecretKey | quote }}
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
+                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
+            - name: ESPRESSO_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "espresso.scim.existingSecret is required when espresso.scim.enabled=true" .Values.espresso.scim.existingSecret | quote }}
+                  key: {{ required "espresso.scim.apiTokenSecretKey is required when espresso.scim.enabled=true" .Values.espresso.scim.apiTokenSecretKey | quote }}
 
 {{- end }}
