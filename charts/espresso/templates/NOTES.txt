@@ -41,7 +41,7 @@ and prevent CORS issues.
 
 1) MAIN ACCESS (Frontend + Backend combined)
    Run this command and open http://localhost:8080
-   kubectl -n {{ .Release.Namespace }} port-forward svc/dev-proxy 8080:80
+   kubectl -n {{ .Release.Namespace }} port-forward svc/espresso-dev-proxy 8080:80
 
 2) TEMPORAL WEB UI
    Access the workflow dashboard at http://localhost:8081

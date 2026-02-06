@@ -7,5 +7,5 @@ Official Helm charts for espressodo projects.
 The charts can be added using the following command:
 
 ```bash
-helm repo add espressodo [https://espressodo.github.io/helm-charts/](https://espressodo.github.io/helm-charts/)
+helm repo add espressodo https://espressodo.github.io/helm-charts/
 helm repo update
