@@ -56,7 +56,7 @@ Behavior:
 {{- $images := ($root.Values.images | default (dict)) -}}
 {{- $repo := (get $images "espressoRepo") | default "espressodo" -}}
 {{- $repo = trimSuffix "/" $repo -}}
-{{- $tag := (get $images "tag") | default "1.5.1" -}}
+{{- $tag := (get $images "tag") | default "1.6.0" -}}
 {{- printf "%s/%s:%s" $repo .name $tag -}}
 {{- end -}}
 

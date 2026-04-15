@@ -33,9 +33,9 @@
 #
 # Example:
 #   espressoRepo: "myacr.azurecr.io/espresso"
-#   tag: "1.5.1"
+#   tag: "1.6.0"
 # will pull:
-#   myacr.azurecr.io/espresso/<imageName>:1.5.1
+#   myacr.azurecr.io/espresso/<imageName>:1.6.0
 images:
 # Controls when the kubelet attempts to pull the specified image.
   # Using 'IfNotPresent' is ideal for local development (e.g. Minikube) 
@@ -48,7 +48,7 @@ images:
 
   # Image tag used for all Espresso components.
   # Customers may pin this for reproducible deployments.
-  tag: "1.5.1"
+  tag: "1.6.0"
 
   # Optional list of Kubernetes imagePullSecret names for private registries.
   # Example:
