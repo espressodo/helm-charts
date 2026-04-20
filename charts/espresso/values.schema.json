@@ -56,6 +56,17 @@
             "AZSB"
           ]
         },
+		"workerBatchPost": {
+		  "type": "object",
+		  "additionalProperties": true,
+		  "properties": {
+			"retentionPeriodValidation": {
+			  "type": "string",
+			  "enum": ["", "disable"],
+			  "default": ""
+			}
+		  }
+		},
         "uiFrontend": {
           "type": "object",
           "additionalProperties": true,

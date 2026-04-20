@@ -33,7 +33,11 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
-                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
+                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}                  
+            {{- if eq (.Values.espresso.workerBatchPost.retentionPeriodValidation | default "") "disable" }}
+            - name: ESPRESSO_RETENTION_PERIOD_VALIDATION
+              value: "disable"
+            {{- end }}                  
             {{- if eq .Values.espresso.interface "AZSB" }}
             - name: BROKER_PASSWORD
               valueFrom:

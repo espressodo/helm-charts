@@ -82,6 +82,15 @@ espresso:
   # Vendor default is "REST" because it requires fewer external parameters.
   interface: "REST"
 
+  # --------------------------------------------------------------------------
+  # Delivery worker configuration
+  # --------------------------------------------------------------------------
+  workerBatchPost:
+    # Leave empty to keep retention-period validation enabled (default behavior).
+    # Set to "disable" to render:
+    # ESPRESSO_RETENTION_PERIOD_VALIDATION=disable
+    retentionPeriodValidation: ""
+
 
   # --------------------------------------------------------------------------
   # UI Frontend configuration
