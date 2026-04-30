@@ -319,10 +319,11 @@ azsb:
 
 
 # ----------------------------------------------------------------------------
-# Ingress (optional)
+# Ingress API exposure (optional)
 # ----------------------------------------------------------------------------
 ingress:
-  # Enable/disable ingress resources.
+  # Enable/disable Ingress resources.
+  # Mutually exclusive with gateway.enabled.
   enabled: false
 
   # className:
@@ -337,4 +338,35 @@ ingress:
 
   # annotations:
   #   Additional annotations for your ingress controller.
+  annotations: {}
+
+
+# ----------------------------------------------------------------------------
+# Gateway API exposure (optional)
+# ----------------------------------------------------------------------------
+gateway:
+  # Enable/disable Gateway API HTTPRoute resources.
+  # Mutually exclusive with ingress.enabled.
+  enabled: false
+
+  # name:
+  #   Name of the existing Gateway this chart should attach to.
+  name: ""
+
+  # namespace:
+  #   Namespace of the existing Gateway.
+  #   Leave empty when the Gateway is in the same namespace as this release.
+  namespace: ""
+
+  # sectionName:
+  #   Optional listener name on the target Gateway.
+  #   Set this when the customer requires binding to a specific listener.
+  sectionName: ""
+
+  # host:
+  #   Hostname used by the HTTPRoute when gateway is enabled.
+  host: ""
+
+  # annotations:
+  #   Additional annotations for the HTTPRoute resource.
   annotations: {}

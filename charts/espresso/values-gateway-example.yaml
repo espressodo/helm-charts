@@ -1,0 +1,14 @@
+# Example customer override for Gateway API exposure
+# Usage:
+#   helm upgrade --install espresso ./charts/espresso -f values-gateway-example.yaml
+
+ingress:
+  enabled: false
+
+gateway:
+  enabled: true
+  name: customer-shared-gateway
+  namespace: infra-gateway
+  sectionName: http
+  host: espresso-dev.example.internal
+  annotations: {}

@@ -32,6 +32,17 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- if not (or (eq $iface "REST") (eq $iface "AZSB")) -}}
 {{- fail (printf "espresso.interface must be REST or AZSB (got: %s)" $iface) -}}
 {{- end -}}
+{{- $ingressEnabled := (.Values.ingress.enabled | default false) -}}
+{{- $gatewayEnabled := (.Values.gateway.enabled | default false) -}}
+{{- if and $ingressEnabled $gatewayEnabled -}}
+{{- fail "Only one north-south routing mode can be enabled at a time: set either ingress.enabled=true or gateway.enabled=true, not both." -}}
+{{- end -}}
+{{- if and $gatewayEnabled (empty (.Values.gateway.name | default "")) -}}
+{{- fail "gateway.name is required when gateway.enabled=true" -}}
+{{- end -}}
+{{- if and $gatewayEnabled (empty (.Values.gateway.host | default "")) -}}
+{{- fail "gateway.host is required when gateway.enabled=true" -}}
+{{- end -}}
 {{- end -}}
 
 {{/*

@@ -4,7 +4,7 @@ Namespace: {{ .Release.Namespace }}
 
 {{- if .Values.ingress.enabled }}
 ===============================================================================
-METHOD 1: INGRESS (Recommended / Production-like)
+METHOD 1: INGRESS API
 ===============================================================================
 
 Access the Application:
@@ -12,9 +12,9 @@ Access the Application:
 
 Routing Overview:
   /         -> espresso-frontend
-  /api/v1   -> espresso-backend
-  /scim/v2  -> espresso-scim (if enabled)
-{{- if and (index .Values "espresso-api") (index .Values "espresso-api" "env") (eq (index .Values "espresso-api" "env" "ESPRESSO_INTERFACE") "REST") }}
+  /api      -> espresso-backend
+  /scim     -> espresso-scim (if enabled)
+{{- if eq .Values.espresso.interface "REST" }}
   /rest/v1  -> espresso-rest-gateway
   /rest/v2  -> espresso-rest-gateway
 {{- end }}
@@ -31,13 +31,44 @@ If your Ingress is not reachable directly via the host, use a Port-Forward:
 3) Verify Backend via Ingress:
    curl -vk -H "Host: {{ .Values.ingress.host }}" https://localhost:9443/api/v1/oidc-conf
 
-{{- else }}
+{{- else if .Values.gateway.enabled }}
 ===============================================================================
-METHOD 2: PORT-FORWARD (Development / No Ingress)
+METHOD 2: GATEWAY API
 ===============================================================================
 
-Since Ingress is disabled, a "Dev-Proxy" has been deployed to handle routing 
-and prevent CORS issues.
+This chart created an HTTPRoute and attached it to the existing Gateway:
+  Gateway: {{ .Values.gateway.name }}{{- if .Values.gateway.namespace }} (namespace: {{ .Values.gateway.namespace }}){{- end }}
+{{- if .Values.gateway.sectionName }}  Listener: {{ .Values.gateway.sectionName }}
+{{- end }}
+
+Configured hostname:
+  {{ .Values.gateway.host }}
+
+Routing Overview:
+  /         -> espresso-frontend
+  /api      -> espresso-backend
+  /scim     -> espresso-scim (if enabled)
+{{- if eq .Values.espresso.interface "REST" }}
+  /rest/v1  -> espresso-rest-gateway
+  /rest/v2  -> espresso-rest-gateway
+{{- end }}
+
+Gateway API status checks:
+  kubectl -n {{ .Release.Namespace }} get httproute {{ include "espresso.fullname" . }}-http
+  kubectl -n {{ .Release.Namespace }} describe httproute {{ include "espresso.fullname" . }}-http
+
+If the route is not accepted, verify:
+- the Gateway name/namespace/sectionName values
+- that the target listener allows HTTPRoute attachments from this namespace
+- that the Gateway API CRDs and controller are installed
+
+{{- else }}
+===============================================================================
+METHOD 3: PORT-FORWARD (Development / No Ingress / No Gateway API)
+===============================================================================
+
+Since neither Ingress nor Gateway API is enabled, a "Dev-Proxy" has been deployed
+to handle routing and prevent CORS issues.
 
 1) MAIN ACCESS (Frontend + Backend combined)
    Run this command and open http://localhost:8080
@@ -47,7 +78,7 @@ and prevent CORS issues.
    Access the workflow dashboard at http://localhost:8081
    kubectl -n {{ .Release.Namespace }} port-forward svc/temporal-web 8081:8080
 
-{{- if and (index .Values "espresso-api") (index .Values "espresso-api" "env") (eq (index .Values "espresso-api" "env" "ESPRESSO_INTERFACE") "REST") }}
+{{- if eq .Values.espresso.interface "REST" }}
 3) REST API GATEWAY
    Access the REST interface locally:
    kubectl -n {{ .Release.Namespace }} port-forward svc/espresso-api 8085:8095 8086:8096 8087:8097

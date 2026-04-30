@@ -19,7 +19,9 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
               "name": {
                 "type": "string",
@@ -56,17 +58,20 @@
             "AZSB"
           ]
         },
-		"workerBatchPost": {
-		  "type": "object",
-		  "additionalProperties": true,
-		  "properties": {
-			"retentionPeriodValidation": {
-			  "type": "string",
-			  "enum": ["", "disable"],
-			  "default": ""
-			}
-		  }
-		},
+        "workerBatchPost": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "retentionPeriodValidation": {
+              "type": "string",
+              "enum": [
+                "",
+                "disable"
+              ],
+              "default": ""
+            }
+          }
+        },
         "uiFrontend": {
           "type": "object",
           "additionalProperties": true,
@@ -334,6 +339,40 @@
           "type": "object"
         }
       }
+    },
+    "gateway": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "name",
+        "namespace",
+        "sectionName",
+        "host",
+        "annotations"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string",
+          "default": ""
+        },
+        "sectionName": {
+          "type": "string",
+          "default": ""
+        },
+        "host": {
+          "type": "string"
+        },
+        "annotations": {
+          "type": "object"
+        }
+      }
     }
   },
   "allOf": [
@@ -470,6 +509,58 @@
             }
           }
         }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "gateway": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "gateway": {
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "host": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ingress": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            }
+          },
+          "gateway": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "not": {}
       }
     }
   ]
