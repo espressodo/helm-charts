@@ -7,8 +7,18 @@ ingress:
 
 gateway:
   enabled: true
-  name: customer-shared-gateway
-  namespace: infra-gateway
-  sectionName: http
   host: espresso-dev.example.internal
   annotations: {}
+
+  # Preferred form: pass the Gateway API parentRefs array directly.
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: customer-shared-gateway
+      namespace: infra-gateway
+      sectionName: http
+
+  # Backwards-compatible fields still work when parentRefs is empty:
+  # name: customer-shared-gateway
+  # namespace: infra-gateway
+  # sectionName: http

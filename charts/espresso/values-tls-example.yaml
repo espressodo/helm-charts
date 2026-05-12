@@ -1,0 +1,44 @@
+# Example: enable TLS for Temporal and PostgreSQL certificate validation.
+# This file contains neutral placeholder values only.
+# Secrets must be created in the release namespace before installing/upgrading.
+
+espresso:
+  # Example tenant code. Replace with the customer-specific 3-letter tenant code.
+  tenant: "ABC"
+  uiBackend:
+    existingSecret: "espresso-example-ui-backend"
+    passwordSaltSecretKey: "ESPRESSO_UI_API_PASSWORD_SALT"
+    privateKeySecretKey: "ESPRESSO_UI_API_PRIVATE_KEY"
+    loginMode: "manual"
+    postTaskUrl: "http://espresso-api:8097"
+
+db:
+  postgres:
+    host: "postgresql.example.svc.cluster.local"
+    port: 5432
+    database: "espresso"
+    user: "espresso"
+    existingSecret: "espresso-example-postgres-credentials"
+    passwordSecretKey: "POSTGRES_PASSWORD"
+
+    sslMode: "verify-full"
+    sslRootCert:
+      enabled: true
+      existingSecret: "espresso-example-postgres-ca"
+      secretKey: "ca.crt"
+      mountPath: "/etc/espresso/postgres-trust"
+      fileName: "ca.crt"
+
+temporal:
+  host: "temporal-frontend.example.svc.cluster.local"
+  port: 7233
+  tls:
+    enabled: true
+    # Must match a DNS name in the Temporal server certificate SAN.
+    # Leave empty to default to temporal.host.
+    serverName: "temporal.example.internal"
+    ca:
+      existingSecret: "espresso-example-temporal-ca"
+      secretKey: "ca.crt"
+      mountPath: "/etc/espresso/trust"
+      fileName: "ca.crt"

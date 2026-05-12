@@ -58,6 +58,7 @@ spec:
               value: {{ .Values.espresso.uiBackend.postTaskUrl | quote }}
             - name: ESPRESSO_UI_LOGIN_MODE
               value: {{ .Values.espresso.uiBackend.loginMode | quote }}
+          {{- include "espresso.trustVolumeMounts" . | nindent 10 }}
 
 {{- if .Values.espresso.scim.enabled }}
 
@@ -81,5 +82,7 @@ spec:
                 secretKeyRef:
                   name: {{ required "espresso.scim.existingSecret is required when espresso.scim.enabled=true" .Values.espresso.scim.existingSecret | quote }}
                   key: {{ required "espresso.scim.apiTokenSecretKey is required when espresso.scim.enabled=true" .Values.espresso.scim.apiTokenSecretKey | quote }}
+          {{- include "espresso.trustVolumeMounts" . | nindent 10 }}
 
 {{- end }}
+      {{- include "espresso.trustVolumes" . | nindent 6 }}

@@ -47,7 +47,7 @@
         "tenant": {
           "type": "string",
           "title": "Tenant code",
-          "description": "Exactly 3 uppercase letters, e.g. PAX",
+          "description": "Exactly 3 uppercase letters, e.g. ABC",
           "pattern": "^[A-Z]{3}$"
         },
         "interface": {
@@ -224,7 +224,15 @@
             },
             "sslMode": {
               "type": "string",
-              "default": "require"
+              "default": "require",
+              "enum": [
+                "disable",
+                "allow",
+                "prefer",
+                "require",
+                "verify-ca",
+                "verify-full"
+              ]
             },
             "existingSecret": {
               "type": "string",
@@ -233,6 +241,41 @@
             "passwordSecretKey": {
               "type": "string",
               "minLength": 1
+            },
+            "sslRootCert": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": [
+                "enabled",
+                "existingSecret",
+                "secretKey",
+                "mountPath",
+                "fileName"
+              ],
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "existingSecret": {
+                  "type": "string"
+                },
+                "secretKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "default": "ca.crt"
+                },
+                "mountPath": {
+                  "type": "string",
+                  "minLength": 1,
+                  "default": "/etc/espresso/postgres-trust"
+                },
+                "fileName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "default": "ca.crt"
+                }
+              }
             }
           }
         }
@@ -253,6 +296,59 @@
         "port": {
           "type": "integer",
           "default": 7233
+        },
+        "tls": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "enabled",
+            "serverName",
+            "ca"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "serverName": {
+              "type": "string",
+              "default": ""
+            },
+            "ca": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": [
+                "existingSecret",
+                "secretKey",
+                "mountPath",
+                "fileName"
+              ],
+              "properties": {
+                "existingSecret": {
+                  "type": "string"
+                },
+                "secretKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "default": "ca.crt"
+                },
+                "mountPath": {
+                  "type": "string",
+                  "minLength": 1,
+                  "default": "/etc/espresso/trust"
+                },
+                "fileName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "default": "ca.crt"
+                }
+              }
+            }
+          }
+        },
+        "kubernetesNamespace": {
+          "type": "string",
+          "default": ""
         }
       }
     },
@@ -371,11 +467,209 @@
         },
         "annotations": {
           "type": "object"
+        },
+        "parentRefs": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "group": {
+                "type": "string",
+                "default": "gateway.networking.k8s.io"
+              },
+              "kind": {
+                "type": "string",
+                "default": "Gateway"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "namespace": {
+                "type": "string",
+                "default": ""
+              },
+              "sectionName": {
+                "type": "string",
+                "default": ""
+              },
+              "port": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              }
+            }
+          }
         }
       }
     }
   },
   "allOf": [
+    {
+      "if": {
+        "required": [
+          "db"
+        ],
+        "properties": {
+          "db": {
+            "required": [
+              "postgres"
+            ],
+            "properties": {
+              "postgres": {
+                "required": [
+                  "sslMode"
+                ],
+                "properties": {
+                  "sslMode": {
+                    "enum": [
+                      "verify-ca",
+                      "verify-full"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "db": {
+            "properties": {
+              "postgres": {
+                "properties": {
+                  "sslRootCert": {
+                    "properties": {
+                      "enabled": {
+                        "const": true
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "sslRootCert"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "db"
+        ],
+        "properties": {
+          "db": {
+            "required": [
+              "postgres"
+            ],
+            "properties": {
+              "postgres": {
+                "required": [
+                  "sslRootCert"
+                ],
+                "properties": {
+                  "sslRootCert": {
+                    "required": [
+                      "enabled"
+                    ],
+                    "properties": {
+                      "enabled": {
+                        "const": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "db": {
+            "properties": {
+              "postgres": {
+                "properties": {
+                  "sslRootCert": {
+                    "required": [
+                      "existingSecret",
+                      "secretKey",
+                      "mountPath",
+                      "fileName"
+                    ],
+                    "properties": {
+                      "existingSecret": {
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "temporal"
+        ],
+        "properties": {
+          "temporal": {
+            "required": [
+              "tls"
+            ],
+            "properties": {
+              "tls": {
+                "required": [
+                  "enabled"
+                ],
+                "properties": {
+                  "enabled": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "temporal": {
+            "properties": {
+              "tls": {
+                "properties": {
+                  "ca": {
+                    "properties": {
+                      "existingSecret": {
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "existingSecret",
+                      "secretKey",
+                      "mountPath",
+                      "fileName"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     {
       "if": {
         "properties": {
@@ -527,15 +821,35 @@
         "properties": {
           "gateway": {
             "properties": {
-              "name": {
-                "type": "string",
-                "minLength": 1
-              },
               "host": {
                 "type": "string",
                 "minLength": 1
               }
-            }
+            },
+            "anyOf": [
+              {
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "properties": {
+                  "parentRefs": {
+                    "type": "array",
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "parentRefs"
+                ]
+              }
+            ]
           }
         }
       }

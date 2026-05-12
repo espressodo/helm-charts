@@ -66,7 +66,7 @@ espresso:
   # Tenant identifier
   # --------------------------------------------------------------------------
   # Tenant code used by Espresso for multi-tenant separation.
-  # Expected format: EXACTLY 3 uppercase letters (e.g. "PAX").
+  # Expected format: EXACTLY 3 uppercase letters (e.g. "ABC").
   #
   # Vendor default is empty to avoid shipping customer-specific values.
   # Customers MUST set this in their customer values file.
@@ -244,8 +244,25 @@ db:
     passwordSecretKey: "POSTGRES_PASSWORD"
 
     # sslMode:
-    #   PostgreSQL SSL mode (e.g., "require", "disable").
+    #   PostgreSQL SSL mode.
+    #   Supported common values: "disable", "require", "verify-ca", "verify-full".
+    #   For production with server certificate validation use "verify-full"
+    #   together with sslRootCert.enabled=true.
     sslMode: "require"
+
+    # sslRootCert:
+    #   Optional PostgreSQL CA trust anchor mounted from an existing Secret.
+    #   Enable this when POSTGRES_SSLMODE is "verify-ca" or "verify-full".
+    #
+    #   The Secret must already exist in the release namespace and contain the
+    #   CA certificate under secretKey, for example:
+    #     kubectl create secret generic espresso-postgres-ca --from-file=ca.crt=./ca.crt
+    sslRootCert:
+      enabled: false
+      existingSecret: ""
+      secretKey: "ca.crt"
+      mountPath: "/etc/espresso/postgres-trust"
+      fileName: "ca.crt"
 
 
 # ----------------------------------------------------------------------------
@@ -253,12 +270,42 @@ db:
 # ----------------------------------------------------------------------------
 temporal:
   # host:
-  #   Temporal Frontend hostname or Kubernetes Service DNS name.
+  #   Temporal Frontend Service name, Kubernetes DNS name, or external hostname.
+  #   When temporal.kubernetesNamespace is set and host is a short service name,
+  #   the chart renders TEMPORAL_HOST as <host>.<kubernetesNamespace>.svc.
   host: "temporal-frontend"
+
+  # kubernetesNamespace:
+  #   Kubernetes namespace where the Temporal Frontend Service runs.
+  #   Leave empty when Temporal is deployed in the same Kubernetes namespace
+  #   as Espresso, or when temporal.host is already a fully qualified DNS name.
+  kubernetesNamespace: ""
 
   # port:
   #   Temporal Frontend port.
   port: 7233
+
+  # tls:
+  #   Optional TLS for all Espresso clients connecting to Temporal.
+  #   CA material is supplied at runtime through an existing Kubernetes Secret.
+  #   No customer certificate is baked into the Espresso images.
+  tls:
+    enabled: false
+
+    # serverName:
+    #   Name used for TLS certificate hostname verification.
+    #   Leave empty to default to the effective Temporal host.
+    serverName: ""
+
+    ca:
+      # existingSecret:
+      #   Existing Secret containing the Temporal CA certificate.
+      #   Example:
+      #     kubectl create secret generic espresso-temporal-ca --from-file=ca.crt=./ca.crt
+      existingSecret: ""
+      secretKey: "ca.crt"
+      mountPath: "/etc/espresso/trust"
+      fileName: "ca.crt"
 
 
 # ----------------------------------------------------------------------------
@@ -349,18 +396,32 @@ gateway:
   # Mutually exclusive with ingress.enabled.
   enabled: false
 
+  # parentRefs:
+  #   Optional explicit list of Gateway API parentRefs for the HTTPRoute.
+  #   When this list is empty, the backwards-compatible single parentRef below
+  #   is rendered from gateway.name / namespace / sectionName.
+  #
+  # Example:
+  #   parentRefs:
+  #     - group: gateway.networking.k8s.io
+  #       kind: Gateway
+  #       name: shared-gateway
+  #       namespace: infra-gateway
+  #       sectionName: http
+  #       # port: 80
+  parentRefs: []
+
   # name:
-  #   Name of the existing Gateway this chart should attach to.
+  #   Backwards-compatible single Gateway name. Used only when parentRefs is empty.
   name: ""
 
   # namespace:
-  #   Namespace of the existing Gateway.
+  #   Backwards-compatible single Gateway namespace. Used only when parentRefs is empty.
   #   Leave empty when the Gateway is in the same namespace as this release.
   namespace: ""
 
   # sectionName:
-  #   Optional listener name on the target Gateway.
-  #   Set this when the customer requires binding to a specific listener.
+  #   Backwards-compatible listener name. Used only when parentRefs is empty.
   sectionName: ""
 
   # host:

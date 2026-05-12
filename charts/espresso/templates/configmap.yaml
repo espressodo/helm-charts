@@ -15,9 +15,19 @@ data:
   POSTGRES_DATABASE: {{ .Values.db.postgres.database | quote }}
   POSTGRES_USER: {{ .Values.db.postgres.user | quote }}
   POSTGRES_SSLMODE: {{ .Values.db.postgres.sslMode | quote }}
+{{- if (.Values.db.postgres.sslRootCert.enabled | default false) }}
+  POSTGRES_SSLROOTCERT: {{ include "espresso.postgresSslRootCertPath" . | quote }}
+{{- end }}
 
-  TEMPORAL_HOST: {{ .Values.temporal.host | quote }}
+  TEMPORAL_HOST: {{ include "espresso.temporalHost" . | quote }}
   TEMPORAL_PORT: {{ .Values.temporal.port | quote }}
+{{- if (.Values.temporal.tls.enabled | default false) }}
+  TEMPORAL_TLS_ENABLED: "true"
+  TEMPORAL_TLS_SERVER_NAME: {{ include "espresso.temporalTlsServerName" . | quote }}
+  ESPRESSO_TRUSTED_CA_DIR: {{ ((.Values.temporal.tls.ca.mountPath | default "/etc/espresso/trust") | trimSuffix "/") | quote }}
+{{- else }}
+  TEMPORAL_TLS_ENABLED: "false"
+{{- end }}
 
   ESPRESSO_UI_API_HOST: espresso-backend
   ESPRESSO_UI_API_PORT: "8088"

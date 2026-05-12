@@ -33,11 +33,11 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
-                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}                  
+                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
             {{- if eq (.Values.espresso.workerBatchPost.retentionPeriodValidation | default "") "disable" }}
             - name: ESPRESSO_RETENTION_PERIOD_VALIDATION
               value: "disable"
-            {{- end }}                  
+            {{- end }}
             {{- if eq .Values.espresso.interface "AZSB" }}
             - name: BROKER_PASSWORD
               valueFrom:
@@ -45,6 +45,7 @@ spec:
                   name: {{ required "azsb.existingSecret is required when espresso.interface=AZSB" .Values.azsb.existingSecret | quote }}
                   key: {{ required "azsb.passwordSecretKey is required when espresso.interface=AZSB" .Values.azsb.passwordSecretKey | quote }}
             {{- end }}
+          {{- include "espresso.trustVolumeMounts" . | nindent 10 }}
 
         - name: worker-task-get
           image: {{ include "espresso.espressodoImage" (dict "root" . "name" "worker-task-get") }}
@@ -65,6 +66,7 @@ spec:
                   name: {{ required "azsb.existingSecret is required when espresso.interface=AZSB" .Values.azsb.existingSecret | quote }}
                   key: {{ required "azsb.passwordSecretKey is required when espresso.interface=AZSB" .Values.azsb.passwordSecretKey | quote }}
             {{- end }}
+          {{- include "espresso.trustVolumeMounts" . | nindent 10 }}
 
         - name: worker-task-post
           image: {{ include "espresso.espressodoImage" (dict "root" . "name" "worker-task-post") }}
@@ -85,3 +87,5 @@ spec:
                   name: {{ required "azsb.existingSecret is required when espresso.interface=AZSB" .Values.azsb.existingSecret | quote }}
                   key: {{ required "azsb.passwordSecretKey is required when espresso.interface=AZSB" .Values.azsb.passwordSecretKey | quote }}
             {{- end }}
+          {{- include "espresso.trustVolumeMounts" . | nindent 10 }}
+      {{- include "espresso.trustVolumes" . | nindent 6 }}

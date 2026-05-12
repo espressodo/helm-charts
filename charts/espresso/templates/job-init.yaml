@@ -15,7 +15,6 @@ spec:
     spec:
       restartPolicy: Never
 
-
       {{- include "espresso.imagePullSecrets" . | nindent 6 }}
       containers:
 
@@ -33,7 +32,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
-                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}              
+                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
+            {{- if (.Values.db.postgres.sslRootCert.enabled | default false) }}
+            - name: PGSSLROOTCERT
+              value: {{ include "espresso.postgresSslRootCertPath" . | quote }}
+            {{- end }}
+          {{- include "espresso.trustVolumeMounts" . | nindent 10 }}
 {{- end }}
 
 {{- if .Values.init.temporalNamespace }}
@@ -44,6 +48,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "espresso.fullname" . }}-config
+          {{- if (.Values.temporal.tls.enabled | default false) }}
+          env:
+            {{- include "espresso.temporalCliTlsEnv" . | nindent 12 }}
+          {{- end }}
           command: ["/bin/sh","-lc"]
           args:
             - |
@@ -74,6 +82,7 @@ spec:
               fi
 
               echo "Temporal namespace OK."
+          {{- include "espresso.trustVolumeMounts" . | nindent 10 }}
 {{- end }}
 
 {{- if and (not .Values.init.postgresSchema) (not .Values.init.temporalNamespace) }}
@@ -81,4 +90,5 @@ spec:
           image: busybox:1.36
           command: ["sh","-c","echo 'init enabled but no actions selected';"]
 {{- end }}
+      {{- include "espresso.trustVolumes" . | nindent 6 }}
 {{- end }}

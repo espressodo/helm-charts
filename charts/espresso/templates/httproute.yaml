@@ -1,23 +1,35 @@
 {{- if .Values.gateway.enabled }}
+{{- $gateway := (.Values.gateway | default (dict)) -}}
+{{- $parentRefs := ($gateway.parentRefs | default (list)) -}}
+{{- if eq (len $parentRefs) 0 -}}
+{{- $parentRefs = list (dict "group" "gateway.networking.k8s.io" "kind" "Gateway" "name" $gateway.name "namespace" $gateway.namespace "sectionName" $gateway.sectionName) -}}
+{{- end }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: {{ include "espresso.fullname" . }}-http
   labels:
     {{- include "espresso.labels" . | nindent 4 }}
+{{ with .Values.gateway.annotations }}
   annotations:
-    {{- with .Values.gateway.annotations }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
+{{ toYaml . | nindent 4 }}
+{{ end }}
 spec:
   parentRefs:
-    - name: {{ .Values.gateway.name | quote }}
-      {{- if .Values.gateway.namespace }}
-      namespace: {{ .Values.gateway.namespace | quote }}
+{{- range $idx, $ref := $parentRefs }}
+    - group: {{ ($ref.group | default "gateway.networking.k8s.io") | quote }}
+      kind: {{ ($ref.kind | default "Gateway") | quote }}
+      name: {{ required (printf "gateway.parentRefs[%d].name is required when gateway.enabled=true" $idx) $ref.name | quote }}
+      {{- if $ref.namespace }}
+      namespace: {{ $ref.namespace | quote }}
       {{- end }}
-      {{- if .Values.gateway.sectionName }}
-      sectionName: {{ .Values.gateway.sectionName | quote }}
+      {{- if $ref.sectionName }}
+      sectionName: {{ $ref.sectionName | quote }}
       {{- end }}
+      {{- if $ref.port }}
+      port: {{ $ref.port }}
+      {{- end }}
+{{- end }}
   hostnames:
     - {{ .Values.gateway.host | quote }}
   rules:
@@ -26,16 +38,22 @@ spec:
             type: PathPrefix
             value: /api
       backendRefs:
-        - name: espresso-backend
+        - group: ""
+          kind: Service
+          name: espresso-backend
           port: 8088
+          weight: 1
 {{- if .Values.espresso.scim.enabled }}
     - matches:
         - path:
             type: PathPrefix
             value: /scim
       backendRefs:
-        - name: espresso-scim
+        - group: ""
+          kind: Service
+          name: espresso-scim
           port: 8109
+          weight: 1
 {{- end }}
 {{- if eq .Values.espresso.interface "REST" }}
     - matches:
@@ -43,21 +61,30 @@ spec:
             type: PathPrefix
             value: /rest/v1
       backendRefs:
-        - name: espresso-rest-gateway
+        - group: ""
+          kind: Service
+          name: espresso-rest-gateway
           port: 80
+          weight: 1
     - matches:
         - path:
             type: PathPrefix
             value: /rest/v2
       backendRefs:
-        - name: espresso-rest-gateway
+        - group: ""
+          kind: Service
+          name: espresso-rest-gateway
           port: 80
+          weight: 1
 {{- end }}
     - matches:
         - path:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: espresso-frontend
+        - group: ""
+          kind: Service
+          name: espresso-frontend
           port: 80
+          weight: 1
 {{- end }}
