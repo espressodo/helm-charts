@@ -330,6 +330,45 @@ init:
 
 
 # ----------------------------------------------------------------------------
+# Database migration jobs
+# ----------------------------------------------------------------------------
+dbMigration:
+  # enabled:
+  #   Runs the idempotent Espresso database migration needed when upgrading
+  #   Espresso from 1.5.1 to 1.6.0.
+  #   The migration is rendered as a Helm pre-upgrade hook so it can be
+  #   executed by Helm/GitOps before the application pods are updated.
+  enabled: true
+
+  # targetVersion:
+  #   Used for the Kubernetes Job name and log output.
+  targetVersion: "1.6.0"
+
+  image:
+    # Uses the official PostgreSQL image only for the psql client.
+    repository: "postgres"
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+
+  # hookWeight:
+  #   Hook weight for GitOps/Helm hook ordering.
+  hookWeight: "-10"
+
+  # hookDeletePolicy:
+  #   Deletes successful hook jobs and recreates them on the next upgrade.
+  hookDeletePolicy: "before-hook-creation,hook-succeeded"
+
+  # extraAnnotations:
+  #   Optional extra annotations for GitOps controllers.
+  #   Example for Argo CD if your setup does not rely on Helm hook mapping:
+  #     argocd.argoproj.io/hook: PreSync
+  #     argocd.argoproj.io/sync-wave: "-10"
+  extraAnnotations: {}
+
+  backoffLimit: 1
+
+
+# ----------------------------------------------------------------------------
 # Azure Service Bus configuration (only if espresso.interface="AZSB")
 # ----------------------------------------------------------------------------
 azsb:

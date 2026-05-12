@@ -507,6 +507,77 @@
           }
         }
       }
+    },
+    "dbMigration": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "enabled",
+        "targetVersion",
+        "image",
+        "hookWeight",
+        "hookDeletePolicy",
+        "extraAnnotations",
+        "backoffLimit"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "targetVersion": {
+          "type": "string",
+          "minLength": 1,
+          "default": "1.6.0"
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "repository",
+            "tag",
+            "pullPolicy"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "minLength": 1,
+              "default": "postgres"
+            },
+            "tag": {
+              "type": "string",
+              "minLength": 1,
+              "default": "16-alpine"
+            },
+            "pullPolicy": {
+              "type": "string",
+              "minLength": 1,
+              "default": "IfNotPresent"
+            }
+          }
+        },
+        "hookWeight": {
+          "type": "string",
+          "default": "-10"
+        },
+        "hookDeletePolicy": {
+          "type": "string",
+          "minLength": 1,
+          "default": "before-hook-creation,hook-succeeded"
+        },
+        "extraAnnotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {}
+        },
+        "backoffLimit": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 1
+        }
+      }
     }
   },
   "allOf": [

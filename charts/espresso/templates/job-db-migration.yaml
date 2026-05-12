@@ -1,0 +1,100 @@
+{{- $migration := (.Values.dbMigration | default (dict)) -}}
+{{- if ($migration.enabled | default false) }}
+{{- $image := ($migration.image | default (dict)) -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: espresso-db-migration-{{ ($migration.targetVersion | default "1.6.0") | replace "." "-" }}
+  labels:
+    {{- include "espresso.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": {{ ($migration.hookWeight | default "-10") | quote }}
+    "helm.sh/hook-delete-policy": {{ ($migration.hookDeletePolicy | default "before-hook-creation,hook-succeeded") | quote }}
+    {{ with ($migration.extraAnnotations | default (dict)) }}
+{{ toYaml . | nindent 4 }}
+    {{ end }}
+spec:
+  backoffLimit: {{ ($migration.backoffLimit | default 1) }}
+  template:
+    metadata:
+      labels:
+        {{- include "espresso.selectorLabels" . | nindent 8 }}
+        espresso: db-migration
+    spec:
+      restartPolicy: Never
+      {{- include "espresso.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: migrate-1-6-0
+          image: {{ printf "%s:%s" ($image.repository | default "postgres") ($image.tag | default "16-alpine") | quote }}
+          imagePullPolicy: {{ ($image.pullPolicy | default .Values.images.pullPolicy | default "IfNotPresent") | quote }}
+          env:
+            - name: PGHOST
+              value: {{ required "db.postgres.host is required" .Values.db.postgres.host | quote }}
+            - name: PGPORT
+              value: {{ .Values.db.postgres.port | quote }}
+            - name: PGDATABASE
+              value: {{ required "db.postgres.database is required" .Values.db.postgres.database | quote }}
+            - name: PGUSER
+              value: {{ required "db.postgres.user is required" .Values.db.postgres.user | quote }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
+                  key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
+            - name: PGSSLMODE
+              value: {{ .Values.db.postgres.sslMode | quote }}
+            - name: PGCONNECT_TIMEOUT
+              value: "15"
+            {{ if (.Values.db.postgres.sslRootCert.enabled | default false) }}
+            - name: PGSSLROOTCERT
+              value: {{ include "espresso.postgresSslRootCertPath" . | quote }}
+            {{ end }}
+          command: ["/bin/sh", "-lc"]
+          args:
+            - |
+              set -eu
+              echo "Running Espresso database migration 1.5.1 -> {{ $migration.targetVersion | default "1.6.0" }}"
+
+              psql -v ON_ERROR_STOP=1 <<'SQL'
+              BEGIN;
+
+              ALTER TABLE espresso.statistic
+                ALTER COLUMN statistic_id SET DEFAULT gen_random_uuid();
+
+              ALTER TABLE espresso.report
+                ALTER COLUMN report_id SET DEFAULT gen_random_uuid();
+
+              ALTER TABLE espresso.configuration_log
+                ALTER COLUMN configuration_log_id SET DEFAULT gen_random_uuid();
+
+              CREATE TABLE IF NOT EXISTS espresso.batch_record_keys (
+                tenant_id UUID NOT NULL,
+                batch_id  UUID NOT NULL,
+                main_key  TEXT NOT NULL,
+                identifiers JSONB NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                PRIMARY KEY (tenant_id, batch_id, main_key)
+              );
+
+              COMMIT;
+              SQL
+
+              echo "Espresso database migration 1.5.1 -> {{ $migration.targetVersion | default "1.6.0" }} completed."
+          {{ if (.Values.db.postgres.sslRootCert.enabled | default false) }}
+          volumeMounts:
+            - name: postgres-ca
+              mountPath: {{ include "espresso.postgresSslRootCertPath" . | quote }}
+              subPath: {{ (.Values.db.postgres.sslRootCert.fileName | default "ca.crt") | quote }}
+              readOnly: true
+          {{ end }}
+      {{ if (.Values.db.postgres.sslRootCert.enabled | default false) }}
+      volumes:
+        - name: postgres-ca
+          secret:
+            secretName: {{ required "db.postgres.sslRootCert.existingSecret is required when db.postgres.sslRootCert.enabled=true" .Values.db.postgres.sslRootCert.existingSecret | quote }}
+            items:
+              - key: {{ (.Values.db.postgres.sslRootCert.secretKey | default "ca.crt") | quote }}
+                path: {{ (.Values.db.postgres.sslRootCert.fileName | default "ca.crt") | quote }}
+      {{ end }}
+{{ end }}
