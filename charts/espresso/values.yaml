@@ -33,9 +33,9 @@
 #
 # Example:
 #   espressoRepo: "myacr.azurecr.io/espresso"
-#   tag: "1.6.0"
+#   tag: "1.7.0"
 # will pull:
-#   myacr.azurecr.io/espresso/<imageName>:1.6.0
+#   myacr.azurecr.io/espresso/<imageName>:1.7.0
 images:
 # Controls when the kubelet attempts to pull the specified image.
   # Using 'IfNotPresent' is ideal for local development (e.g. Minikube) 
@@ -48,13 +48,63 @@ images:
 
   # Image tag used for all Espresso components.
   # Customers may pin this for reproducible deployments.
-  tag: "1.6.0"
+  tag: "1.7.0"
 
   # Optional list of Kubernetes imagePullSecret names for private registries.
   # Example:
   #   imagePullSecrets:
   #     - "my-registry-cred"
   imagePullSecrets: []
+
+
+# ----------------------------------------------------------------------------
+# ExternalSecret support (optional)
+# ----------------------------------------------------------------------------
+# When enabled, the chart renders an ExternalSecret resource for the
+# External Secrets Operator. The operator then creates/syncs the Kubernetes
+# Secret referenced by the normal existingSecret values below.
+#
+# The External Secrets Operator and CRDs must already be installed in the cluster.
+externalSecret:
+  enabled: false
+
+  # How often the External Secrets Operator refreshes the generated Secret.
+  refreshInterval: "1h0m0s"
+
+  labels: {}
+  annotations: {}
+
+  # SecretStore or ClusterSecretStore reference.
+  # Example:
+  #   secretStoreRef:
+  #     name: customer-secret-store
+  #     kind: ClusterSecretStore
+  secretStoreRef: {}
+
+  # Name of the Kubernetes Secret created by the ExternalSecret.
+  # Reference this same Secret from db.postgres.existingSecret,
+  # espresso.uiBackend.existingSecret, espresso.sso.existingSecret, etc.
+  targetSecretName: ""
+
+  # Map individual remote secret properties to Kubernetes Secret keys.
+  data: []
+    # - secretKey: POSTGRES_PASSWORD
+    #   remoteRef:
+    #     key: espresso/postgres
+    #     property: password
+    # - secretKey: ESPRESSO_UI_API_PASSWORD_SALT
+    #   remoteRef:
+    #     key: espresso/ui-backend
+    #     property: passwordSalt
+    # - secretKey: ESPRESSO_UI_API_PRIVATE_KEY
+    #   remoteRef:
+    #     key: espresso/ui-backend
+    #     property: privateKey
+
+  # Optional: import/extract complete remote secret objects.
+  dataFrom: []
+    # - extract:
+    #     key: espresso/all
 
 
 # ----------------------------------------------------------------------------
@@ -335,14 +385,19 @@ init:
 dbMigration:
   # enabled:
   #   Runs the idempotent Espresso database migration needed when upgrading
-  #   Espresso from 1.5.1 to 1.6.0.
+  #   Espresso from 1.6.0 to 1.7.0.
   #   The migration is rendered as a Helm pre-upgrade hook so it can be
   #   executed by Helm/GitOps before the application pods are updated.
   enabled: true
 
+  # fromVersion:
+  #   Source Espresso version for this migration. The job is rendered only for
+  #   upgrades from 1.6.0 to 1.7.0.
+  fromVersion: "1.6.0"
+
   # targetVersion:
-  #   Used for the Kubernetes Job name and log output.
-  targetVersion: "1.6.0"
+  #   Target Espresso version for this migration.
+  targetVersion: "1.7.0"
 
   image:
     # Uses the official PostgreSQL image only for the psql client.

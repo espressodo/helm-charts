@@ -1,10 +1,12 @@
 {{- $migration := (.Values.dbMigration | default (dict)) -}}
-{{- if ($migration.enabled | default false) }}
+{{- $fromVersion := ($migration.fromVersion | default "1.6.0") -}}
+{{- $targetVersion := ($migration.targetVersion | default .Chart.AppVersion) -}}
+{{- if and ($migration.enabled | default false) .Release.IsUpgrade (eq $fromVersion "1.6.0") (eq $targetVersion "1.7.0") }}
 {{- $image := ($migration.image | default (dict)) -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: espresso-db-migration-{{ ($migration.targetVersion | default "1.6.0") | replace "." "-" }}
+  name: espresso-db-migration-{{ $fromVersion | replace "." "-" }}-to-{{ $targetVersion | replace "." "-" }}
   labels:
     {{- include "espresso.labels" . | nindent 4 }}
   annotations:
@@ -25,7 +27,7 @@ spec:
       restartPolicy: Never
       {{- include "espresso.imagePullSecrets" . | nindent 6 }}
       containers:
-        - name: migrate-1-6-0
+        - name: migrate-1-7-0
           image: {{ printf "%s:%s" ($image.repository | default "postgres") ($image.tag | default "16-alpine") | quote }}
           imagePullPolicy: {{ ($image.pullPolicy | default .Values.images.pullPolicy | default "IfNotPresent") | quote }}
           env:
@@ -54,33 +56,15 @@ spec:
           args:
             - |
               set -eu
-              echo "Running Espresso database migration 1.5.1 -> {{ $migration.targetVersion | default "1.6.0" }}"
+              echo "Running Espresso database migration {{ $fromVersion }} -> {{ $targetVersion }}"
 
               psql -v ON_ERROR_STOP=1 <<'SQL'
-              BEGIN;
-
-              ALTER TABLE espresso.statistic
-                ALTER COLUMN statistic_id SET DEFAULT gen_random_uuid();
-
-              ALTER TABLE espresso.report
-                ALTER COLUMN report_id SET DEFAULT gen_random_uuid();
-
-              ALTER TABLE espresso.configuration_log
-                ALTER COLUMN configuration_log_id SET DEFAULT gen_random_uuid();
-
-              CREATE TABLE IF NOT EXISTS espresso.batch_record_keys (
-                tenant_id UUID NOT NULL,
-                batch_id  UUID NOT NULL,
-                main_key  TEXT NOT NULL,
-                identifiers JSONB NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                PRIMARY KEY (tenant_id, batch_id, main_key)
-              );
-
-              COMMIT;
+              CREATE UNIQUE INDEX IF NOT EXISTS uq_user_externalid
+              ON espresso."user"(externalid)
+              WHERE externalid IS NOT NULL AND externalid <> '';
               SQL
 
-              echo "Espresso database migration 1.5.1 -> {{ $migration.targetVersion | default "1.6.0" }} completed."
+              echo "Espresso database migration {{ $fromVersion }} -> {{ $targetVersion }} completed."
           {{ if (.Values.db.postgres.sslRootCert.enabled | default false) }}
           volumeMounts:
             - name: postgres-ca

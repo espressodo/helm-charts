@@ -82,7 +82,7 @@ Behavior:
   Result: myregistry.azurecr.io/espresso/<name>:<tag>
 
 - Tag can be overridden via .Values.images.tag
-  Default: "1.5.1" (keep this in chart values.yaml as you prefer)
+  Default: "1.7.0" (keep this in chart values.yaml as you prefer)
 ------------------------------------------------------------------------------
 */}}
 {{- define "espresso.espressodoImage" -}}
@@ -90,7 +90,7 @@ Behavior:
 {{- $images := ($root.Values.images | default (dict)) -}}
 {{- $repo := (get $images "espressoRepo") | default "espressodo" -}}
 {{- $repo = trimSuffix "/" $repo -}}
-{{- $tag := (get $images "tag") | default "1.6.0" -}}
+{{- $tag := (get $images "tag") | default "1.7.0" -}}
 {{- printf "%s/%s:%s" $repo .name $tag -}}
 {{- end -}}
 
