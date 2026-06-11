@@ -3,6 +3,16 @@ entries:
   espresso:
   - apiVersion: v2
     appVersion: 1.7.0
+    created: "2026-06-11T08:39:40.548348976Z"
+    description: Espresso Data Privacy Platform
+    digest: e3776ba0ff1941c32350cec6fdb46ba4d2d2abee26aa7173f2b766830f9c9a1d
+    name: espresso
+    type: application
+    urls:
+    - https://github.com/espressodo/helm-charts/releases/download/espresso-0.1.12/espresso-0.1.12.tgz
+    version: 0.1.12
+  - apiVersion: v2
+    appVersion: 1.7.0
     created: "2026-06-02T11:53:29.202962213Z"
     description: Espresso Data Privacy Platform
     digest: ad7a894b9600d492790f894f89cce604c61ea4e01e8175462a4476b27f0b09d5
@@ -101,4 +111,4 @@ entries:
     urls:
     - https://github.com/espressodo/helm-charts/releases/download/espresso-0.1.0/espresso-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-02T11:53:29.202995173Z"
+generated: "2026-06-11T08:39:40.548397627Z"
