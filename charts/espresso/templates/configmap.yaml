@@ -47,4 +47,39 @@ data:
   AUTHORITY_CLIENT_REDIRECT_URI: {{ required "espresso.sso.redirectUri is required when espresso.sso.enabled=true" .Values.espresso.sso.redirectUri | quote }}
   AUTHORITY_CLIENT_POST_LOGOUT_REDIRECT_URI: {{ required "espresso.sso.postLogoutRedirectUri is required when espresso.sso.enabled=true" .Values.espresso.sso.postLogoutRedirectUri | quote }}
   AUTHORITY_CLIENT_SCOPE: {{ .Values.espresso.sso.scope | default "openid profile email" | quote }}
+
+  AUTHORITY_DISCOVERY_ENABLED: {{ .Values.espresso.sso.discoveryEnabled | toString | quote }}
+  AUTHORITY_REQUIRE_STATE: {{ .Values.espresso.sso.requireState | toString | quote }}
+  AUTHORITY_ID_TOKEN_VALIDATION_REQUIRED: {{ .Values.espresso.sso.idTokenValidationRequired | toString | quote }}
+  AUTHORITY_INTROSPECTION_ENABLED: {{ .Values.espresso.sso.introspectionEnabled | toString | quote }}
+
+  AUTHORITY_USER_ID_CLAIM: {{ .Values.espresso.sso.userIdClaim | default "userid" | quote }}
+  AUTHORITY_EMAIL_CLAIM: {{ .Values.espresso.sso.emailClaim | default "email" | quote }}
+  AUTHORITY_NAME_CLAIM: {{ .Values.espresso.sso.nameClaim | default "name" | quote }}
+  AUTHORITY_ROLE_CLAIM: {{ .Values.espresso.sso.roleClaim | default "role" | quote }}
+  AUTHORITY_TENANT_CLAIM: {{ .Values.espresso.sso.tenantClaim | default "tenant" | quote }}
+
+  AUTHORITY_ALLOWED_ROLES: {{ .Values.espresso.sso.allowedRoles | default "sysadmin,admin,operator,approver,observer" | quote }}
+  AUTHORITY_LINK_EXISTING_USER_BY_USERID: {{ .Values.espresso.sso.linkExistingUserByUserid | toString | quote }}
+{{- with .Values.espresso.sso.authorizationEndpoint }}
+  AUTHORITY_AUTHORIZATION_ENDPOINT: {{ . | quote }}
+{{- end }}
+{{- with .Values.espresso.sso.tokenEndpoint }}
+  AUTHORITY_TOKEN_ENDPOINT: {{ . | quote }}
+{{- end }}
+{{- with .Values.espresso.sso.introspectionEndpoint }}
+  AUTHORITY_INTROSPECTION_ENDPOINT: {{ . | quote }}
+{{- end }}
+{{- with .Values.espresso.sso.userInfoEndpoint }}
+  AUTHORITY_USERINFO_ENDPOINT: {{ . | quote }}
+{{- end }}
+{{- with .Values.espresso.sso.jwksEndpoint }}
+  AUTHORITY_JWKS_ENDPOINT: {{ . | quote }}
+{{- end }}
+{{- with .Values.espresso.sso.endSessionEndpoint }}
+  AUTHORITY_END_SESSION_ENDPOINT: {{ . | quote }}
+{{- end }}
+{{- with .Values.espresso.sso.issuer }}
+  AUTHORITY_ISSUER: {{ . | quote }}
+{{- end }}
 {{- end }}

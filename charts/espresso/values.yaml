@@ -194,7 +194,9 @@ espresso:
     #   Authentication mode for the UI backend.
     #   Allowed values:
     #     - "manual": local/manual login
-    #     - "sso": OIDC-based login (requires espresso.sso.enabled=true)
+    #     - "oidc": OIDC login with an existing local/SCIM-provisioned user
+    #     - "sso": legacy alias for "oidc"
+    #     - "oidc-only": OIDC login with JIT user provisioning, without SCIM
     loginMode: "manual"
 
     # postTaskUrl:
@@ -258,6 +260,61 @@ espresso:
     # scope:
     #   OIDC scopes to request.
     scope: "openid profile email"
+
+    # ------------------------------------------------------------------------
+    # OIDC flow/security options (Espresso 1.7)
+    # ------------------------------------------------------------------------
+    # discoveryEnabled:
+    #   Enables OIDC discovery via .well-known/openid-configuration.
+    discoveryEnabled: true
+
+    # requireState:
+    #   Requires and validates the state parameter on callback.
+    requireState: true
+
+    # idTokenValidationRequired:
+    #   Validates the ID token using JWKS/signature, issuer, audience, expiry and nonce.
+    idTokenValidationRequired: true
+
+    # introspectionEnabled:
+    #   Enables access token introspection for legacy providers.
+    #   Default is false because the new flow validates the ID token.
+    introspectionEnabled: false
+
+    # ------------------------------------------------------------------------
+    # OIDC claim mapping defaults (Espresso 1.7)
+    # ------------------------------------------------------------------------
+    # userIdClaim:
+    #   Claim used as internal Espresso userid.
+    #   Default: "userid". Customers can set "sub" when the full subject value
+    #   must be used as the local userid.
+    userIdClaim: "userid"
+
+    emailClaim: "email"
+    nameClaim: "name"
+    roleClaim: "role"
+    tenantClaim: "tenant"
+
+    # allowedRoles:
+    #   Optional whitelist of valid Espresso roles. Recommended for oidc-only.
+    allowedRoles: "sysadmin,admin,operator,approver,observer"
+
+    # linkExistingUserByUserid:
+    #   Allows controlled linking of an existing local user without externalid
+    #   by userid in oidc-only mode. Secure default is false.
+    linkExistingUserByUserid: false
+
+    # ------------------------------------------------------------------------
+    # Optional explicit OIDC endpoint overrides
+    # ------------------------------------------------------------------------
+    # When set, these override discovery and legacy AUTHORITY_URL fallback.
+    authorizationEndpoint: ""
+    tokenEndpoint: ""
+    introspectionEndpoint: ""
+    userInfoEndpoint: ""
+    jwksEndpoint: ""
+    endSessionEndpoint: ""
+    issuer: ""
 
 
 # ----------------------------------------------------------------------------

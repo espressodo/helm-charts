@@ -175,3 +175,72 @@ espresso:
 Chart version `0.1.11` also fixes the PostgreSQL init job tenant placeholder mapping. The DB init container now receives `TENANT_CODE` from `espresso.tenant`, because the shipped SQL templates replace `#{TENANT_CODE}`.
 
 Temporal namespace initialization is unchanged and still uses the Helm value `espresso.tenant` directly.
+
+## OIDC 1.7 configuration
+
+Chart version `0.1.12` adds the OIDC configuration parameters introduced for Espresso `1.7.0`.
+
+Supported login modes are:
+
+- `manual`: local/manual login
+- `oidc`: OIDC login with an existing local/SCIM-provisioned user
+- `sso`: legacy alias for `oidc`
+- `oidc-only`: OIDC login with JIT user provisioning, without SCIM
+
+Default OIDC flow and claim mapping values:
+
+```yaml
+espresso:
+  uiBackend:
+    loginMode: "oidc-only"
+
+  sso:
+    enabled: true
+    authorityUrl: "https://idp.example.ch/oidc"
+    clientId: "espresso-webapp"
+    existingSecret: "espresso-secrets"
+    clientSecretSecretKey: "AUTHORITY_CLIENT_SECRET"
+    redirectUri: "https://espresso.example.ch/callback"
+    postLogoutRedirectUri: "https://espresso.example.ch"
+    scope: "openid profile email"
+
+    discoveryEnabled: true
+    requireState: true
+    idTokenValidationRequired: true
+    introspectionEnabled: false
+
+    userIdClaim: "userid"
+    emailClaim: "email"
+    nameClaim: "name"
+    roleClaim: "role"
+    tenantClaim: "tenant"
+
+    allowedRoles: "sysadmin,admin,operator,approver,observer"
+    linkExistingUserByUserid: false
+```
+
+For customer-specific IdP mappings, override the claim names. Example for using the OIDC subject as Espresso userid:
+
+```yaml
+espresso:
+  uiBackend:
+    loginMode: "oidc"
+
+  sso:
+    enabled: true
+    userIdClaim: "sub"
+```
+
+Optional explicit endpoint overrides are supported. When set, they override discovery and the legacy `AUTHORITY_URL` fallback:
+
+```yaml
+espresso:
+  sso:
+    authorizationEndpoint: "https://idp.example.ch/oauth2/authorize"
+    tokenEndpoint: "https://idp.example.ch/oauth2/token"
+    introspectionEndpoint: "https://idp.example.ch/oauth2/introspect"
+    userInfoEndpoint: "https://idp.example.ch/oauth2/userinfo"
+    jwksEndpoint: "https://idp.example.ch/oauth2/jwks"
+    endSessionEndpoint: "https://idp.example.ch/oauth2/logout"
+    issuer: "https://idp.example.ch/oidc"
+```

@@ -1,0 +1,37 @@
+espresso:
+  uiBackend:
+    # manual | oidc | sso | oidc-only
+    loginMode: "oidc-only"
+
+  sso:
+    enabled: true
+    authorityUrl: "https://idp.example.ch/oidc"
+    clientId: "espresso-webapp"
+    existingSecret: "espresso-secrets"
+    clientSecretSecretKey: "AUTHORITY_CLIENT_SECRET"
+    redirectUri: "https://espresso.example.ch/callback"
+    postLogoutRedirectUri: "https://espresso.example.ch"
+    scope: "openid profile email"
+
+    discoveryEnabled: true
+    requireState: true
+    idTokenValidationRequired: true
+    introspectionEnabled: false
+
+    userIdClaim: "userid"
+    emailClaim: "email"
+    nameClaim: "name"
+    roleClaim: "role"
+    tenantClaim: "tenant"
+
+    allowedRoles: "sysadmin,admin,operator,approver,observer"
+    linkExistingUserByUserid: false
+
+    # Optional endpoint overrides. Leave empty for discovery/legacy fallback.
+    authorizationEndpoint: ""
+    tokenEndpoint: ""
+    introspectionEndpoint: ""
+    userInfoEndpoint: ""
+    jwksEndpoint: ""
+    endSessionEndpoint: ""
+    issuer: ""

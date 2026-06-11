@@ -110,8 +110,11 @@
               "type": "string",
               "enum": [
                 "manual",
-                "sso"
-              ]
+                "oidc",
+                "sso",
+                "oidc-only"
+              ],
+              "default": "manual"
             },
             "postTaskUrl": {
               "type": "string",
@@ -171,6 +174,71 @@
             "scope": {
               "type": "string",
               "default": "openid profile email"
+            },
+            "discoveryEnabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "requireState": {
+              "type": "boolean",
+              "default": true
+            },
+            "idTokenValidationRequired": {
+              "type": "boolean",
+              "default": true
+            },
+            "introspectionEnabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "userIdClaim": {
+              "type": "string",
+              "default": "userid"
+            },
+            "emailClaim": {
+              "type": "string",
+              "default": "email"
+            },
+            "nameClaim": {
+              "type": "string",
+              "default": "name"
+            },
+            "roleClaim": {
+              "type": "string",
+              "default": "role"
+            },
+            "tenantClaim": {
+              "type": "string",
+              "default": "tenant"
+            },
+            "allowedRoles": {
+              "type": "string",
+              "default": "sysadmin,admin,operator,approver,observer"
+            },
+            "linkExistingUserByUserid": {
+              "type": "boolean",
+              "default": false
+            },
+            "authorizationEndpoint": {
+              "type": "string"
+            },
+            "tokenEndpoint": {
+              "type": "string"
+            },
+            "introspectionEndpoint": {
+              "type": "string"
+            },
+            "userInfoEndpoint": {
+              "type": "string"
+            },
+            "jwksEndpoint": {
+              "type": "string"
+            },
+            "endSessionEndpoint": {
+              "type": "string"
+            },
+            "issuer": {
+              "type": "string"
             }
           }
         }
