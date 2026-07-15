@@ -37,6 +37,13 @@ spec:
                 secretKeyRef:
                   name: {{ required "db.postgres.existingSecret is required" .Values.db.postgres.existingSecret | quote }}
                   key: {{ required "db.postgres.passwordSecretKey is required" .Values.db.postgres.passwordSecretKey | quote }}
+            {{- if eq .Values.espresso.interface "AZSB" }}
+            - name: BROKER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "azsb.existingSecret is required when espresso.interface=AZSB" .Values.azsb.existingSecret | quote }}
+                  key: {{ required "azsb.passwordSecretKey is required when espresso.interface=AZSB" .Values.azsb.passwordSecretKey | quote }}
+            {{- end }}
             - name: ESPRESSO_UI_API_PASSWORD_SALT
               valueFrom:
                 secretKeyRef:
